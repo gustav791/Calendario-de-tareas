@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Tareas Escolares</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f1f3f4;
+            margin: 0;
+            padding: 20px;
+            color: #202124;
+        }
+        h1 {
+            text-align: center;
+            color: #1a73e8;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background: #f9f9f9;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s;
+        }
+        li:hover {
+            background: #e8f0fe;
+        }
+        .completed {
+            text-decoration: line-through;
+            color: gray;
+        }
+        button {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #155ab6;
+        }
+        input, select {
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 20%;
+        }
+        #calendar {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            width: 300px;
+        }
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        .day {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lista de Tareas Escolares</h1>
+        <select id="subjectSelect">
+            <option value="">Selecciona una materia</option>
+            <option value="Lenguaje">Lenguaje</option>
+            <option value="Matemáticas">Matemáticas</option>
+            <option value="Física">Física</option>
+            <option value="Química">Química</option>
+            <option value="Biología">Biología</option>
+            <option value="Estudios Sociales">Estudios Sociales</option>
+            <option value="Moral, Urbanidad y Cívica">Moral, Urbanidad y Cívica</option>
+            <option value="Tecnología">Tecnología</option>
+            <option value="Informática">Informática</option>
+            <option value="Inglés">Inglés</option>
+        </select>
+        <input type="text" id="taskInput" placeholder="Ingresa una nueva tarea...">
+        <select id="prioritySelect">
+            <option value="baja">Baja</option>
+            <option value="media">Media</option>
+            <option value="alta">Alta</option>
+        </select>
+        <input type="date" id="dueDateInput">
+        <button onclick="addTask()">Agregar Tarea</button>
+        <button onclick="openCalendar()">Calendario</button>
+        <select id="filterSelect" onchange="filterTasks()">
+            <option value="all">Todas</option>
+            <option value="completed">Completadas</option>
+            <option value="pending">Pendientes</option>
+        </select>
+        <ul id="taskList"></ul>
+
+        <div id="overlay" onclick="closeCalendar()"></div>
+        <div id="calendar">
+            <h2>Calendario de Tareas (Lunes a Viernes)</h2>
+            <div id="calendarContent"></div>
+            <button onclick="closeCalendar()">Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        const tasks = [];
+
+        function addTask() {
+            const taskInput = document.getElementById('taskInput');
+            const subjectSelect = document.getElementById('subjectSelect');
+            const prioritySelect = document.getElementById('prioritySelect');
+            const dueDateInput = document.getElementById('dueDateInput');
+            const taskName = taskInput.value.trim();
+            const subject = subjectSelect.value;
+            const priority = prioritySelect.value;
+            const dueDate = dueDateInput.value;
+
+            if (taskName && subject) {
+                const day = prompt("Ingresa el día (Lunes, Martes, Miércoles, Jueves, Viernes):");
+                if (["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"].includes(day)) {
+                    tasks.push({ day, subject, taskName, completed: false, priority, dueDate });
+                    updateTaskList();
+                    taskInput.value = '';
+                    subjectSelect.selectedIndex = 0; // Resetear selección
+                    prioritySelect.selectedIndex = 0; // Resetear prioridad
+                    dueDateInput.value = ''; // Resetear fecha
+                } else {
+                    alert('Por favor, ingresa un día válido.');
+                }
+            } else {
+                alert('Por favor, ingresa una tarea y selecciona una materia.');
+            }
+        }
+
+        function updateTaskList() {
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+            tasks.forEach((task, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="${task.completed ? 'completed' : ''}">${task.day} - ${task.subject}: ${task.taskName} (Prioridad: ${task.priority}, Vence: ${task.dueDate})</span> <button onclick="toggleTask(${index})">${task.completed ? 'Pendiente' : 'Completar'}</button> <button onclick="editTask(${index})">Editar</button>`;
+                taskList.appendChild(li);
+            });
+        }
+
+        function toggleTask(index) {
+            tasks[index].completed = !tasks[index].completed;
+            updateTaskList();
+        }
+
+        function editTask(index) {
+            const task = tasks[index];
+            const newTaskName = prompt("Edita la tarea:", task.taskName);
+            if (newTaskName) {
+                task.taskName = newTaskName;
+                updateTaskList();
+            }
+        }
+
+        function filterTasks() {
+            const filter = document.getElementById('filterSelect').value;
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+            tasks.forEach((task, index) => {
+                if ((filter === 'completed' && task.completed) || (filter === 'pending' && !task.completed) || filter === 'all') {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span class="${task.completed ? 'completed' : ''}">${task.day} - ${task.subject}: ${task.taskName} (Prioridad: ${task.priority}, Vence: ${task.dueDate})</span> <button onclick="toggleTask(${index})">${task.completed ? 'Pendiente' : 'Completar'}</button> <button onclick="editTask(${index})">Editar</button>`;
+                    taskList.appendChild(li);
+                }
+            });
+        }
+
+        function openCalendar() {
+            const calendar = document.getElementById('calendar');
+            const overlay = document.getElementById('overlay');
+            const calendarContent = document.getElementById('calendarContent');
+            calendarContent.innerHTML = '';
+
+            const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+            days.forEach(day => {
+                const dayDiv = document.createElement('div');
+                dayDiv.classList.add('day');
+                dayDiv.innerHTML = `<strong>${day}</strong>`;
+                
+                tasks.filter(task => task.day === day).forEach(task => {
+                    const taskDiv = document.createElement('div');
+                    taskDiv.textContent = `${task.subject}: ${task.taskName} (Prioridad: ${task.priority}, Vence: ${task.dueDate})`;
+                    taskDiv.style.color = task.completed ? 'green' : 'red';
+                    dayDiv.appendChild(taskDiv);
+                });
+                
+                calendarContent.appendChild(dayDiv);
+            });
+
+            calendar.style.display = 'block';
+            overlay.style.display = 'block';
+        }
+
+        function closeCalendar() {
+            const calendar = document.getElementById('calendar');
+            const overlay = document.getElementById('overlay');
+            calendar.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
